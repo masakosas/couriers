@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+<body>
+
+  <form class="form">
+    <input type="text" placeholder="Список айди курьеров">
+    <input type="submit" value="Обновить статусы">
+  </form>
+  <input type="text" id="authField" placeholder="Обновить токен доступа" style="margin-top: 1em;">
+  <script>
+    let token = '';
+    document.querySelector('#authField').addEventListener('change', ({target} = {}) => {
+      token = target.value;
+    })
+      const form = document.querySelector('.form');
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+      const arrOfIds = e.target[0].value.split(/\s+/gmi);
+
+      Promise.allSettled(
+        arrOfIds.map((id) => fetch(
+        `https://delivery.chocofood.kz/backend/api/couriers/${id}/`,
+         {
+            headers: {
+            accept: "application/json, text/plain, */*",
+            authorization: `Token ${token || '60867746b61c5a3b84efbc29182cea2207366ab0'}`,
+            "content-type": "application/json;charset=UTF-8",
+          },
+          "referrer": "https://delivery.chocofood.kz/orders",
+          "referrerPolicy": "strict-origin-when-cross-origin",
+          "body": "{\"state\":\"not_working\",\"deactivation_hours\":\"\",\"courier_note\":\"\"}",
+          "method": "PATCH",
+        })),
+      ).then((response) => {
+        let authRequired = false;
+        const passed = response.filter((req) => {
+          if(req.status === 'fulfilled' && req.value.status === 401) {
+            authRequired = true;
+          }
+          return req.status === 'fulfilled' && req.value.status === 200
+        });
+        if(passed.length === response.length) {
+          alert('Завершенно');
+        } else if (authRequired) {
+          alert('Требуется обновление токена доступа');
+        } else {
+          alert('Что-то пошло не по плану');
+        }
+        console.log(response);
+      })
+
+    });
+  </script>
+</body>
